@@ -25,7 +25,9 @@ jobs:
         run: docker-compose --version
 
       - name: Build containers
-        run: docker-compose build
+        run: |
+          cd admin/docker
+          docker-compose build
 
       - name: Test services
         run: |
