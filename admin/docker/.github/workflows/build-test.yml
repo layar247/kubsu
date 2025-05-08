@@ -6,20 +6,25 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Build containers
-      run: docker-compose build
-    
-    - name: Test services
-      run: |
-        docker-compose up -d
-        sleep 5
-        
-        curl -s http://localhost:80 | grep -q "Nginx Works!" || (echo "Nginx test failed" && exit 1)
-        
-        curl -s http://localhost:80/app | grep -q "Hello from Gunicorn" || (echo "App proxy test failed" && exit 1)
-               
-        docker-compose port app 8000 | grep -v "0.0.0.0" || (echo "Port 8000 is exposed" && exit 1)
-        
-        docker-compose down
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Build containers
+        run: docker-compose build
+
+      - name: Test services
+        run: |
+          docker-compose up -d
+          sleep 5
+          
+          curl -s http://localhost:80 | grep -q "Nginx Works!" || (echo "Nginx test failed" && exit 1)
+          
+          curl -s http://localhost:80/app | grep -q "Hello from Gunicorn" || (echo "App proxy test failed" && exit 1)
+                  
+          docker-compose port app 8000 | grep -v "0.0.0.0" || (echo "Port 8000 is exposed" && exit 1)
+          
+          docker-compose down
