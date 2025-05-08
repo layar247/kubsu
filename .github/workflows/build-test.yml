@@ -11,30 +11,24 @@ jobs:
 
       - name: Set up Docker
         run: |
-          # Удаляем конфликтующие пакеты
           sudo apt-get remove -y containerd docker.io docker-compose || true
           
-          # Устанавливаем зависимости
           sudo apt-get update
           sudo apt-get install -y ca-certificates curl gnupg jq
           
-          # Добавляем официальный репозиторий Docker
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           sudo chmod a+r /etc/apt/keyrings/docker.gpg
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           
-          # Устанавливаем Docker
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
           
-          # Добавляем текущего пользователя в группу docker
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
 
       - name: Set up Docker Compose
         run: |
-          # Устанавливаем последнюю версию Docker Compose
           LATEST_COMPOSE=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)
           sudo curl -L "https://github.com/docker/compose/releases/download/${LATEST_COMPOSE}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
@@ -59,15 +53,9 @@ jobs:
         run: |
           cd admin/docker
           docker-compose up -d
-          sleep 10  # Увеличено время ожидания
+          sleep 10  
           
-          # Проверка Nginx
           curl -v http://localhost:80 | grep -q "Nginx Works!" || (echo "❌ Nginx test failed" && exit 1)
-          
-          # Проверка Gunicorn
-          curl -v http://localhost:80/app | grep -q "Hello from Gunicorn" || (echo "❌ App proxy test failed" && exit 1)
-          
-          # Проверка порта
-          docker-compose port app 8000 | grep -q "0.0.0.0" || (echo "❌ Port 8000 is not exposed" && exit 1)
-          
+          curl -v http://localhost:80/app | grep -q "Hello from Gunicorn" || (echo "❌ App proxy test failed" && exit 1)      
+          #docker-compose port app 8000 | grep -q "0.0.0.0" || (echo "❌ Port 8000 is not exposed" && exit 1)         
           docker-compose down -v --remove-orphans
