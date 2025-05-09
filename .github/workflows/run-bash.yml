@@ -1,0 +1,28 @@
+name: Validate Bash Scripts
+
+on:
+  workflow_dispatch:  
+  push:
+    paths:
+      - 'admin/bash/**'  
+
+jobs:
+  check-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test all scripts
+        run: |
+          cd admin/bash/
+          FAILED=0
+          for script in {1..8}.sh; do
+            echo "→ Running $script..."
+            if ./$script --test; then
+              echo "✅ $script passed!"
+            else
+              echo "❌ $script failed!"
+              FAILED=1
+            fi
+          done
+          exit $FAILED  
