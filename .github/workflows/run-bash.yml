@@ -1,29 +1,70 @@
-name: Run Bash Scripts
+name: Test Bash Scripts
 
 on: [push]
 
 jobs:
-  run-scripts:
+  test-scripts:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set execute permissions
+      - name: Set up environment
         run: |
           cd admin/bash/
-          chmod +x *.sh  # Даем права на выполнение всем .sh файлам
-          ls -la  # Для проверки прав
+          chmod +x *.sh
+          echo "Список скриптов для тестирования:"
+          ls -la *.sh
 
-      - name: Run scripts
+      - name: Test all scripts
+        id: test-scripts
         run: |
           cd admin/bash/
+          total_scripts=0
+          failed_scripts=0
+          script_results=""
+          
           for script in *.sh; do
-            echo "→ Running $script..."
-            if ./$script; then
-              echo "✅ $script executed successfully"
+            ((total_scripts++))
+            echo "→ Тестируем $script..."
+            
+            # Временный файл для вывода
+            output_file="${script}.output"
+            
+            # Запускаем скрипт с тестовыми параметрами
+            if ./"$script" "test_output_${script}.txt" "5"; then
+              result="✅ PASSED"
+              echo "$result"
             else
-              echo "❌ $script failed!"
-              exit 1
+              result="❌ FAILED (код $?)"
+              ((failed_scripts++))
+              echo "$result"
             fi
+            
+            script_results+="$script: $result"$'\n'
+            
+            # Выводим лог скрипта если он есть
+            if [ -f "$output_file" ]; then
+              echo "Вывод скрипта:"
+              cat "$output_file"
+            fi
+            echo "----------------------------------------"
           done
+          
+          echo "Итоговый отчет:"
+          echo "$script_results"
+          echo "Всего скриптов: $total_scripts"
+          echo "Успешно: $((total_scripts - failed_scripts))"
+          echo "Неудачно: $failed_scripts"
+          
+          # Завершаем с ошибкой если есть хотя бы один неудачный тест
+          if [ "$failed_scripts" -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: script-results
+          path: admin/bash/*.output
