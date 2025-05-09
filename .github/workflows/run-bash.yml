@@ -115,13 +115,6 @@ jobs:
             echo "✖ 8.sh должен был завершиться с ошибкой"
             all_passed=false
           } || echo "✔ 8.sh правильно завершён при разных LC_"
-          
-          if [ "$all_passed" = false ]; then
-            echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
-            exit 1
-          else
-            echo "ВСЕ ТЕСТЫ УСПЕШНО ПРОЙДЕНЫ"
-          fi
 
           if [ "$all_passed" = false ]; then
             echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
