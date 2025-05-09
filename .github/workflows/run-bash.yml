@@ -38,7 +38,7 @@ jobs:
           test_params["4.sh"]="Earth"
           test_params["5.sh"]="default_param"
 
-          for script in *.sh; do
+          for script in {1..5}.sh; do
             echo "▶ Запуск $script..."
 
             if [[ "$script" == "4.sh" ]]; then
@@ -82,6 +82,8 @@ jobs:
               echo "⚠ Нет тестовых параметров для $script"
               all_passed=false
             fi            
+            echo "--------------------------------"
+          done                  
           echo "▶ 6.sh: запрещённые переменные"
           FOO=5 BAR=1 ./6.sh && {
             echo "✖ 6.sh не должен был запускаться при FOO=5 и BAR=1"
@@ -113,10 +115,7 @@ jobs:
             echo "✖ 8.sh должен был завершиться с ошибкой"
             all_passed=false
           } || echo "✔ 8.sh правильно завершён при разных LC_"
-
-            echo "--------------------------------"
-          done                  
-
+          
           if [ "$all_passed" = false ]; then
             echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
             exit 1
