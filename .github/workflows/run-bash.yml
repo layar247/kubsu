@@ -1,4 +1,4 @@
-name: Test Bash Scripts
+name: Simple Scripts Test
 
 on: [push]
 
@@ -9,62 +9,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up environment
+      - name: Test all bash scripts
         run: |
           cd admin/bash/
           chmod +x *.sh
-          echo "Список скриптов для тестирования:"
-          ls -la *.sh
-
-      - name: Test all scripts
-        id: test-scripts
-        run: |
-          cd admin/bash/
-          total_scripts=0
-          failed_scripts=0
-          script_results=""
+          
+          echo "--- Начинаем тестирование скриптов ---"
+          all_passed=true
           
           for script in *.sh; do
-            ((total_scripts++))
-            echo "→ Тестируем $script..."
-            
-            # Временный файл для вывода
-            output_file="${script}.output"
+            echo "▶ Запуск $script..."
             
             # Запускаем скрипт с тестовыми параметрами
-            if ./"$script" "test_output_${script}.txt" "5"; then
-              result="✅ PASSED"
-              echo "$result"
+            if ./"$script" "temp_output_$script" "5"; then
+              echo "✔ $script - УСПЕХ"
             else
-              result="❌ FAILED (код $?)"
-              ((failed_scripts++))
-              echo "$result"
+              echo "✖ $script - ОШИБКА (код: $?)"
+              all_passed=false
+              # Выводим справку по использованию
+              echo "Правильное использование:"
+              ./"$script" || true
             fi
-            
-            script_results+="$script: $result"$'\n'
-            
-            # Выводим лог скрипта если он есть
-            if [ -f "$output_file" ]; then
-              echo "Вывод скрипта:"
-              cat "$output_file"
-            fi
-            echo "----------------------------------------"
+            echo "--------------------------------"
           done
           
-          echo "Итоговый отчет:"
-          echo "$script_results"
-          echo "Всего скриптов: $total_scripts"
-          echo "Успешно: $((total_scripts - failed_scripts))"
-          echo "Неудачно: $failed_scripts"
-          
-          # Завершаем с ошибкой если есть хотя бы один неудачный тест
-          if [ "$failed_scripts" -gt 0 ]; then
+          # Завершаем с ошибкой если хотя бы один скрипт упал
+          if [ "$all_passed" = false ]; then
+            echo "НЕКОТОРЫЕ СКРИПТЫ ЗАВЕРШИЛИСЬ С ОШИБКОЙ"
             exit 1
+          else
+            echo "ВСЕ СКРИПТЫ УСПЕШНО ВЫПОЛНЕНЫ"
           fi
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: script-results
-          path: admin/bash/*.output
