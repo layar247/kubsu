@@ -1,28 +1,29 @@
-name: Validate Bash Scripts
+name: Run Bash Scripts
 
-on:
-  workflow_dispatch:  
-  push:
-    paths:
-      - 'admin/bash/**'  
+on: [push]
 
 jobs:
-  check-scripts:
+  run-scripts:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test all scripts
+      - name: Set execute permissions
         run: |
           cd admin/bash/
-          FAILED=0
-          for script in {1..8}.sh; do
+          chmod +x *.sh  # Даем права на выполнение всем .sh файлам
+          ls -la  # Для проверки прав
+
+      - name: Run scripts
+        run: |
+          cd admin/bash/
+          for script in *.sh; do
             echo "→ Running $script..."
-            if ./$script --test; then
-              echo "✅ $script passed!"
+            if ./$script; then
+              echo "✅ $script executed successfully"
             else
               echo "❌ $script failed!"
-              FAILED=1
+              exit 1
             fi
           done
-          exit $FAILED  
