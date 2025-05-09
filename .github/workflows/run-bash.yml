@@ -85,6 +85,46 @@ jobs:
 
             echo "--------------------------------"
           done
+                    echo "▶ Ручное тестирование 6.sh, 7.sh, 8.sh"
+
+          echo "▶ 6.sh: запрещённые переменные"
+          FOO=5 BAR=1 ./6.sh && {
+            echo "✖ 6.sh не должен был запускаться при FOO=5 и BAR=1"
+            all_passed=false
+          } || echo "✔ 6.sh правильно завершён при запрещённых переменных"
+
+          echo "▶ 6.sh: проверка появления файла fix.txt"
+          touch fix.txt &
+          ./6.sh && echo "✔ 6.sh обнаружил файл" || {
+            echo "✖ 6.sh не обнаружил файл"
+            all_passed=false
+          }
+          rm -f fix.txt
+
+          echo "▶ 7.sh: анализ \$PATH"
+          ./7.sh && echo "✔ 7.sh выполнен успешно" || {
+            echo "✖ 7.sh завершился с ошибкой"
+            all_passed=false
+          }
+
+          echo "▶ 8.sh: одна LC_ переменная"
+          LC_ALL=en_US.UTF-8 ./8.sh && echo "✔ 8.sh успешен при одной LC_" || {
+            echo "✖ 8.sh упал при одной LC_"
+            all_passed=false
+          }
+
+          echo "▶ 8.sh: разные LC_ переменные"
+          LC_ALL=en_US.UTF-8 LC_TIME=ru_RU.UTF-8 ./8.sh && {
+            echo "✖ 8.sh должен был завершиться с ошибкой"
+            all_passed=false
+          } || echo "✔ 8.sh правильно завершён при разных LC_"
+
+          if [ "$all_passed" = false ]; then
+            echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
+            exit 1
+          else
+            echo "ВСЕ ТЕСТЫ УСПЕШНО ПРОЙДЕНЫ"
+          fi
 
           if [ "$all_passed" = false ]; then
             echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
