@@ -5,40 +5,42 @@ on: [push]
 jobs:
   test-scripts:
     runs-on: ubuntu-latest
-    env:
-      TEST_DIR: "./test_data"  # Тестовая директория
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Prepare test environment
         run: |
-          # Подготовка данных для 2.sh
-          mkdir -p $TEST_DIR/input/subdir{1..3}
-          touch $TEST_DIR/input/subdir1/file{1..3}
-          touch $TEST_DIR/input/subdir2/file{1..5}
-          touch $TEST_DIR/input/subdir3/file{1..2}
-          mkdir -p $TEST_DIR/output
+          mkdir -p ./test_data/input/subdir{1..3}
+          touch ./test_data/input/subdir1/file{1..3}
+          touch ./test_data/input/subdir2/file{1..5}
+          touch ./test_data/input/subdir3/file{1..2}
+          mkdir -p ./test_data/output
 
       - name: Test all bash scripts
         run: |
+          set -e
           cd admin/bash/
+
           chmod +x *.sh
-          
           echo "--- Начинаем тестирование скриптов ---"
+
           all_passed=true
-          declare -A test_params=(
-            ["1.sh"]="output.txt 5"
-            ["2.sh"]="$TEST_DIR/input $TEST_DIR/output"
-            ["3.sh"]="param1 param2"
-            ["4.sh"]="Earth"  # Тест с правильной планетой
-            ["5.sh"]="default_param"
-          )
-          
+
+          # Задаём переменные явно, чтобы избежать проблем с вложенными путями
+          INPUT_DIR="../../test_data/input"
+          OUTPUT_DIR="../../test_data/output"
+
+          declare -A test_params
+          test_params["1.sh"]="output.txt 5"
+          test_params["2.sh"]="$INPUT_DIR $OUTPUT_DIR"
+          test_params["3.sh"]="param1 param2"
+          test_params["4.sh"]="Earth"
+          test_params["5.sh"]="default_param"
+
           for script in *.sh; do
             echo "▶ Запуск $script..."
-            
-            # Особый тест для 4.sh с ошибкой
+
             if [[ "$script" == "4.sh" ]]; then
               echo "Тест с правильной планетой (Earth):"
               if ./"$script" Earth | grep -q "1"; then
@@ -47,7 +49,7 @@ jobs:
                 echo "✖ Earth: неверный результат"
                 all_passed=false
               fi
-              
+
               echo "Тест с неизвестной планетой:"
               if ./"$script" Pluto 2>&1 | grep -q "Unknown planet"; then
                 echo "✔ Правильно обработана неизвестная планета"
@@ -55,7 +57,7 @@ jobs:
                 echo "✖ Не обработана неизвестная планета"
                 all_passed=false
               fi
-              
+
               echo "Тест без параметров:"
               if ./"$script" 2>&1 | grep -q "Unknown planet"; then
                 echo "✔ Правильно обработано отсутствие параметра"
@@ -63,32 +65,27 @@ jobs:
                 echo "✖ Не обработано отсутствие параметра"
                 all_passed=false
               fi
-            
-            # Запуск других скриптов с их параметрами
-            elif [[ -v "test_params[$script]" ]]; then
+
+            elif [[ -v test_params[$script] ]]; then
+              echo "Аргументы: ${test_params[$script]}"
               if ./"$script" ${test_params[$script]}; then
                 echo "✔ $script - УСПЕХ"
-                # Для 2.sh покажем результат
                 if [[ "$script" == "2.sh" ]]; then
                   echo "Созданные файлы:"
-                  ls -l $TEST_DIR/output/
+                  ls -l "$OUTPUT_DIR"
                 fi
               else
                 echo "✖ $script - ОШИБКА (код: $?)"
                 all_passed=false
-                echo "Правильное использование:"
-                ./"$script" || true
               fi
-            
-            # Скрипты без специальных параметров
             else
               echo "⚠ Нет тестовых параметров для $script"
               all_passed=false
             fi
-            
+
             echo "--------------------------------"
           done
-          
+
           if [ "$all_passed" = false ]; then
             echo "НЕКОТОРЫЕ ТЕСТЫ ПРОВАЛЕНЫ"
             exit 1
@@ -98,4 +95,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: rm -rf $TEST_DIR
+        run: rm -rf ./test_data
