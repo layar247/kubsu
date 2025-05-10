@@ -71,7 +71,7 @@ jobs:
             --network host \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "make test"
+            sh -c "pip install pytest && make test"  # Устанавливаем pytest перед запуском тестов
 
   # deploy:
   #   runs-on: self-hosted
