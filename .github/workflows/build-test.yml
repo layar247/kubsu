@@ -5,17 +5,17 @@ on: [push]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker
         run: |
-          sudo apt-get remove -y containerd docker.io docker-compose || true
-          
           sudo apt-get update
-          sudo apt-get install -y ca-certificates curl gnupg jq
+          sudo apt-get install -y ca-certificates curl gnupg
           
+          # Установка Docker
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -23,38 +23,59 @@ jobs:
           
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
-          
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
 
-      - name: Set up Docker Compose
+      - name: Install Docker Compose
         run: |
-          LATEST_COMPOSE=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)
-          sudo curl -L "https://github.com/docker/compose/releases/download/${LATEST_COMPOSE}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-          sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
           docker-compose --version
 
-      - name: Verify paths
+      - name: Verify project structure
+        working-directory: ./admin/docker
         run: |
-          echo "Проверка структуры проекта:"
-          ls -la admin/docker/
-          if [ ! -f admin/docker/docker-compose.yml ]; then
-            echo "❌ docker-compose.yml не найден в admin/docker/"
-            exit 1
-          fi
-      - name: Build containers
-        run: |
-          cd admin/docker
-          docker-compose build --no-cache
+          echo "Project structure:"
+          ls -la
+          [ -f docker-compose.yml ] || { echo "❌ docker-compose.yml not found"; exit 1; }
+          [ -d nginx ] || { echo "❌ nginx directory not found"; exit 1; }
+          [ -d app ] || { echo "❌ app directory not found"; exit 1; }
 
-      - name: Test services
+      - name: Build and test services
+        working-directory: ./admin/docker
         run: |
-          cd admin/docker
+          docker-compose build
           docker-compose up -d
-          sleep 10  
           
-          curl -v http://localhost:80 | grep -q "Nginx Works!" || (echo "❌ Nginx test failed" && exit 1)
-          curl -v http://localhost:80/app | grep -q "Hello from Gunicorn" || (echo "❌ App proxy test failed" && exit 1)      
-          #docker-compose port app 8000 | grep -q "0.0.0.0" || (echo "❌ Port 8000 is not exposed" && exit 1)         
+          # Wait for serv
+          timeout 60 bash -c 'until docker-compose ps | grep "healthy"; do sleep 5; done' || {
+            echo "❌ Services didn't become healthy"
+            docker-compose logs
+            exit 1
+          }
+
+          # Test Nginx
+          curl -fsS http://localhost | grep -q "Hello from Nginx" || {
+            echo "❌ Nginx test failed"
+            exit 1
+          }
+
+          # Test Gunicorn
+          curl -fsS http://localhost/app | grep -q "Hello from Gunicorn" || {
+            echo "❌ Gunicorn test failed"
+            exit 1
+          }
+
+          # Verify port 8000 is not exposed
+          docker-compose port app 8000 2>&1 | grep -q "Error" || {
+            echo "❌ Port 8000 is exposed externally"
+            exit 1
+          }
+
+          echo "✅ All tests passed"
+
+      - name: Cleanup
+        if: always()
+        working-directory: ./admin/docker
+        run: |
           docker-compose down -v --remove-orphans
