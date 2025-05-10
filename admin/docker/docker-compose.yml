@@ -1,22 +1,28 @@
-version: '3'
-
 services:
-  app:
-    build: ./app
-    ports:
-      - "8000:8000"
-    networks:
-      - app_network
-
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
-    networks:
-      - app_network
+      - "80:80" 
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  app:
+    build: ./app
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/app"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
 networks:
-  app_network:
+  default:
+    name: app_network
     driver: bridge
