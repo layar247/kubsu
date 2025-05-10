@@ -15,7 +15,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ca-certificates curl gnupg
           
-          # Установка Docker
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -45,34 +44,41 @@ jobs:
         working-directory: ./admin/docker
         run: |
           docker-compose build
+
           docker-compose up -d
           
-          # Wait for serv
-          timeout 60 bash -c 'until docker-compose ps | grep "healthy"; do sleep 5; done' || {
+          echo "Waiting for services to become healthy..."
+          timeout 120 bash -c 'until [ "$(docker-compose ps app | grep healthy)" ]; do sleep 5; docker-compose logs app || true; done' || {
             echo "❌ Services didn't become healthy"
             docker-compose logs
             exit 1
           }
 
-          # Test Nginx
-          curl -fsS http://localhost | grep -q "Hello from Nginx" || {
-            echo "❌ Nginx test failed"
-            exit 1
-          }
+          sleep 10
 
-          # Test Gunicorn
-          curl -fsS http://localhost/app | grep -q "Hello from Gunicorn" || {
-            echo "❌ Gunicorn test failed"
+          echo "Testing Nginx..."
+          NGINX_RESPONSE=$(curl -sS http://localhost)
+          if ! echo "$NGINX_RESPONSE" | grep -q "Hello from Nginx"; then
+            echo "❌ Nginx test failed. Received response:"
+            echo "$NGINX_RESPONSE"
             exit 1
-          }
+          fi
 
-          # Verify port 8000 is not exposed
-          docker-compose port app 8000 2>&1 | grep -q "Error" || {
+          # Test Gunicorn 
+          echo "Testing Gunicorn..."
+          GUNICORN_RESPONSE=$(curl -sS http://localhost/app)
+          if ! echo "$GUNICORN_RESPONSE" | grep -q "Hello from Gunicorn"; then
+            echo "❌ Gunicorn test failed. Received response:"
+            echo "$GUNICORN_RESPONSE"
+            exit 1
+          fi
+
+          if docker-compose port app 8000 2>/dev/null; then
             echo "❌ Port 8000 is exposed externally"
             exit 1
-          }
+          fi
 
-          echo "✅ All tests passed"
+          echo "✅ All tests passed successfully"
 
       - name: Cleanup
         if: always()

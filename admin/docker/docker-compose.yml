@@ -1,24 +1,21 @@
+version: '3.8'
 services:
   nginx:
     build: ./nginx
     ports:
       - "80:80"
     depends_on:
-      app:
-        condition: service_healthy
+      - app
+    networks:
+      - app_network
 
   app:
     build: ./app
     expose:
       - "8000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/app"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-    environment:
-      FLASK_ENV: production
+    networks:
+      - app_network
 
 networks:
-  default:
+  app_network:
     driver: bridge
