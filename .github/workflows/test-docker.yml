@@ -1,0 +1,82 @@
+name: Docker Build DeployTest
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/administration
+  POSTGRES_IMAGE: postgres:15-alpine
+  DB_NAME: kubsu
+  DB_USER: kubsu
+  DB_PASSWORD: kubsu
+  APP_PORT: 8058
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin/resultTZ
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      postgres:
+        image: ${{ env.POSTGRES_IMAGE }}
+        env:
+          POSTGRES_DB: ${{ env.DB_NAME }}
+          POSTGRES_USER: ${{ env.DB_USER }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build and start services with Docker Compose
+        run: |
+          cd admin/resultTZ
+          docker-compose -f docker-compose.yml up -d --build
+          
+      - name: Run tests
+        run: |
+          docker-compose exec app sh -c "make install-dev && pytest -v tests/"
+
+      - name: Tear down containers
+        run: |
+          docker-compose down
+
+  
