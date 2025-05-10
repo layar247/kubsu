@@ -7,7 +7,7 @@ install-dev:
 	pip install ".[test]"
 
 test:
-	pytest tests
+	python -m pytest tests
 
 run:
 	uvicorn src.main:app --reload
