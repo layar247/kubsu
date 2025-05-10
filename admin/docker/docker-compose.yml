@@ -1,23 +1,21 @@
-version: '3.8'
+version: '3'
 
 services:
-  nginx:
-    build: ./nginx  #custom 
+  app:
+    build: ./app
     ports:
-      - "80:80"    # only 1 port
-    depends_on:
-      - app
+      - "8000:8000"
     networks:
       - app_network
 
-  app:
-    build: ./app
-    expose:
-      - "8000"     
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
     networks:
       - app_network
-    environment:
-      - FLASK_ENV=production
+    depends_on:
+      - app
 
 networks:
   app_network:
