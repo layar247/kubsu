@@ -33,7 +33,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./admin/resultTZ
+          context: ./admin/resultTZ  
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
@@ -44,11 +44,11 @@ jobs:
     needs: build
     services:
       postgres:
-        image: ${{ env.POSTGRES_IMAGE }}
+        image: postgres:15-alpine  # Используем прямое значение вместо env
         env:
-          POSTGRES_DB: ${{ env.DB_NAME }}
-          POSTGRES_USER: ${{ env.DB_USER }}
-          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+          POSTGRES_DB: kubsu
+          POSTGRES_USER: kubsu
+          POSTGRES_PASSWORD: kubsu
         ports:
           - 5432:5432
         options: >-
@@ -61,22 +61,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+      - name: Pull image
+        run: docker pull ${{ env.DOCKER_IMAGE }}:latest
 
-      - name: Build and start services with Docker Compose
-        run: |
-          cd admin/resultTZ
-          docker-compose -f docker-compose.yml up -d --build
-          
       - name: Run tests
         run: |
-          docker-compose exec app sh -c "make install-dev && pytest -v tests/"
+          docker run --rm \
+            --network host \
+            -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
+            ${{ env.DOCKER_IMAGE }}:latest \
+            sh -c "make install-dev && pytest -v tests/"
 
-      - name: Tear down containers
-        run: |
-          docker-compose down
+  # deploy:
+  #   runs-on: self-hosted
+  #   needs: test
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   steps:
+  #     - name: Setup SSH
+  #       uses: webfactory/ssh-agent@v0.9
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-  
+  #     - name: Deploy
+  #       run: |
+  #         ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+  #         podman pull $DOCKER_IMAGE:latest
+  #         podman stop app || true
+  #         podman rm app || true
+  #         podman run -d \
+  #           --name app \
+  #           -p $APP_PORT:8000 \
+  #           -e DATABASE_URL=postgresql+asyncpg://$DB_USER:$DB_PASSWORD@db-host:5432/$DB_NAME \
+  #           $DOCKER_IMAGE:latest
+  #         EOF
+  #       env:
+  #         DOCKER_IMAGE: ${{ env.DOCKER_IMAGE }}
+  #         APP_PORT: ${{ env.APP_PORT }}
+  #         DB_USER: ${{ env.DB_USER }}
+  #         DB_PASSWORD: ${{ env.DB_PASSWORD }}
+  #         DB_NAME: ${{ env.DB_NAME }}
