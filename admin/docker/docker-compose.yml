@@ -2,27 +2,23 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - "80:80" 
+      - "80:80"
     depends_on:
       app:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
 
   app:
     build: ./app
-    expose:
-      - "8000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/app"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   default:
-    name: app_network
     driver: bridge
