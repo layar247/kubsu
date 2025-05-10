@@ -43,7 +43,6 @@ jobs:
             echo "❌ docker-compose.yml не найден в admin/docker/"
             exit 1
           fi
-
       - name: Build containers
         run: |
           cd admin/docker
