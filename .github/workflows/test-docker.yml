@@ -12,7 +12,7 @@ env:
   DB_NAME: kubsu
   DB_USER: kubsu
   DB_PASSWORD: kubsu
-  APP_PORT: 8058
+  APP_PORT: 8058  
 
 jobs:
   build:
@@ -34,6 +34,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./admin/resultTZ  
+          file: ./admin/resultTZ/Dockerfile  # на всякий
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
@@ -44,7 +45,7 @@ jobs:
     needs: build
     services:
       postgres:
-        image: postgres:15-alpine  
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: kubsu
           POSTGRES_USER: kubsu
@@ -70,7 +71,7 @@ jobs:
             --network host \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "make install-dev && pytest -v tests/"
+            sh -c "make test"
 
   # deploy:
   #   runs-on: self-hosted
