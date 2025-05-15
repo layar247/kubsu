@@ -85,7 +85,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -T -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           podman pull $DOCKER_IMAGE:latest
           podman stop app || true
           podman rm app || true
