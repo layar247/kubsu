@@ -73,31 +73,21 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:latest \
             sh -c "pip install pytest && make test"  
 
-  deploy:
-    runs-on: self-hosted
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy
-        run: |
-          ssh -T -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-          podman pull $DOCKER_IMAGE:latest
-          podman stop app || true
-          podman rm app || true
-          podman run -d \
-            --name app \
-            -p $APP_PORT:8000 \
-            -e DATABASE_URL=postgresql+asyncpg://$DB_USER:$DB_PASSWORD@db-host:5432/$DB_NAME \
-            $DOCKER_IMAGE:latest
-          EOF
-        env:
-          DOCKER_IMAGE: ${{ env.DOCKER_IMAGE }}
-          APP_PORT: ${{ env.APP_PORT }}
-          DB_USER: ${{ env.DB_USER }}
-          DB_PASSWORD: ${{ env.DB_PASSWORD }}
-          DB_NAME: ${{ env.DB_NAME }}
+- name: Deploy
+  run: |
+    echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
+    ssh -vvv -T \
+        -o StrictHostKeyChecking=no \
+        -o ConnectTimeout=15 \
+        -p ${{ secrets.SSH_PORT }} \
+        ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+      echo 'Connection successful!';
+      podman pull ${{ env.DOCKER_IMAGE }}:latest;
+      podman stop app || true;
+      podman rm app || true;
+      podman run -d \
+        --name app \
+        -p ${{ env.APP_PORT }}:8000 \
+        -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
+        ${{ env.DOCKER_IMAGE }}:latest
+    "
