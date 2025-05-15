@@ -71,7 +71,7 @@ jobs:
             --network host \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "pip install pytest && make test"  # Устанавливаем pytest перед запуском тестов
+            sh -c "pip install pytest && make test"  
 
   deploy:
     runs-on: self-hosted
@@ -85,7 +85,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           podman pull $DOCKER_IMAGE:latest
           podman stop app || true
           podman rm app || true
