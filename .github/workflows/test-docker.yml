@@ -12,7 +12,7 @@ env:
   DB_NAME: kubsu
   DB_USER: kubsu
   DB_PASSWORD: kubsu
-  APP_PORT: 8058  #ra
+  APP_PORT: 8058
 
 jobs:
   build:
@@ -33,8 +33,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./admin/resultTZ  
-          file: ./admin/resultTZ/Dockerfile  # на всякий
+          context: ./admin/resultTZ
+          file: ./admin/resultTZ/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
@@ -71,23 +71,33 @@ jobs:
             --network host \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "pip install pytest && make test"  
+            sh -c "pip install pytest && make test"
 
-- name: Deploy
-  run: |
-    echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
-    ssh -vvv -T \
-        -o StrictHostKeyChecking=no \
-        -o ConnectTimeout=15 \
-        -p ${{ secrets.SSH_PORT }} \
-        ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-      echo 'Connection successful!';
-      podman pull ${{ env.DOCKER_IMAGE }}:latest;
-      podman stop app || true;
-      podman rm app || true;
-      podman run -d \
-        --name app \
-        -p ${{ env.APP_PORT }}:8000 \
-        -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
-        ${{ env.DOCKER_IMAGE }}:latest
-    "
+  deploy:
+    runs-on: self-hosted
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy
+        run: |
+          echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
+          ssh -vvv -T \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=15 \
+              -p ${{ secrets.SSH_PORT }} \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            echo 'Connection successful!';
+            podman pull ${{ env.DOCKER_IMAGE }}:latest;
+            podman stop app || true;
+            podman rm app || true;
+            podman run -d \
+              --name app \
+              -p ${{ env.APP_PORT }}:8000 \
+              -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
+              ${{ env.DOCKER_IMAGE }}:latest
+          "
