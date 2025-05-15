@@ -86,7 +86,7 @@ jobs:
       - name: Deploy
         run: |
           echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
-          ssh -vvv -T \
+          ssh -vvv  \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=15 \
               -p ${{ secrets.SSH_PORT }} \
