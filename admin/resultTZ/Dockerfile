@@ -11,5 +11,5 @@ COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/pytho
 COPY --from=builder /app /app
 RUN apk add --no-cache make
 ENV PATH="/usr/local/bin:${PATH}"
-EXPOSE 8000
+EXPOSE 60080
 CMD ["make", "run"]
