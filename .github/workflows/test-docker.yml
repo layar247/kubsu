@@ -38,7 +38,7 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max #ra
+          cache-to: type=gha,mode=max #raz
 
   test:
     runs-on: ubuntu-latest
@@ -85,11 +85,11 @@ jobs:
 
       - name: Deploy
         run: |
-          echo "Trying to connect to ${{ secrets.SSH_HOST }}:58529..."
+          echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
           ssh -vvv  \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=15 \
-              -p 58529 \
+              -p ${{ secrets.SSH_PORT }} \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             echo 'Connection successful!';
             podman pull ${{ env.DOCKER_IMAGE }}:latest;
