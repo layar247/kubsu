@@ -85,11 +85,11 @@ jobs:
 
       - name: Deploy
         run: |
-          echo "Trying to connect to ${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}..."
+          echo "Trying to connect to ${{ secrets.SSH_HOST }}:58529..."
           ssh -vvv  \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=15 \
-              -p ${{ secrets.SSH_PORT }} \
+              -p 58529 \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             echo 'Connection successful!';
             podman pull ${{ env.DOCKER_IMAGE }}:latest;
