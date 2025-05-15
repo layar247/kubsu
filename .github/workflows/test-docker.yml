@@ -38,7 +38,7 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max #r
 
   test:
     runs-on: ubuntu-latest
