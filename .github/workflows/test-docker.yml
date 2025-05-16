@@ -31,14 +31,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.7.0
         with:
           context: ./admin/resultTZ
           file: ./admin/resultTZ/Dockerfile
-          push: ${{ github.event_name == 'push' }}
+          push: true
           tags: ${{ env.DOCKER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max #raz
 
   test:
     runs-on: ubuntu-latest
