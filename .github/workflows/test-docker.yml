@@ -12,7 +12,7 @@ env:
   DB_NAME: kubsu
   DB_USER: kubsu
   DB_PASSWORD: kubsu
-  APP_PORT: 60080 #r
+  APP_PORT: 60080
 
 jobs:
   build:
@@ -79,8 +79,9 @@ jobs:
         run: |
           podman pull ${{ env.DOCKER_IMAGE }}:latest
           podman stop app || true
-          podman rm app || true
+          podman rm -f app || true
           podman run -d \
+            --replace \
             --name app \
             -p 60080:8000 \
             -e BASE_PATH="/matsumoto" \
