@@ -69,6 +69,7 @@ jobs:
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
             sh -c "pip install pytest && make test"
+
   deploy:
     runs-on: self-hosted
     needs: [ test ]
@@ -78,8 +79,9 @@ jobs:
         run: |
           podman pull ${{ env.DOCKER_IMAGE }}:latest
           podman stop app || true
-          podman rm app || true
+          podman rm -f app || true
           podman run -d \
+            --replace \
             --name app \
             -p 60080:8000 \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
