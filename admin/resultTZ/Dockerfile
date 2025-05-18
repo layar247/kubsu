@@ -1,16 +1,17 @@
 FROM python:3.10-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN apk add --no-cache make
+RUN apk add --no-cache make gcc python3-dev musl-dev libffi-dev
 RUN pip install --upgrade pip
 RUN pip install uvicorn
 RUN make install-dev
 
 FROM python:3.10-alpine AS runtime
 WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
-RUN apk add --no-cache make
+RUN apk add --no-cache make libffi
 ENV PATH="/usr/local/bin:${PATH}"
-EXPOSE 60080
-CMD ["make", "run"]
+EXPOSE 8000  # Uvicorn по умолчанию использует порт 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
