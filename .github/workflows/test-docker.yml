@@ -12,7 +12,7 @@ env:
   DB_NAME: kubsu
   DB_USER: kubsu
   DB_PASSWORD: kubsu
-  APP_PORT: 60080
+  APP_PORT: 60080 #r
 
 jobs:
   build:
@@ -71,18 +71,16 @@ jobs:
             sh -c "pip install pytest && make test"
   deploy:
     runs-on: self-hosted
-    needs: [test]
+    needs: [ test ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Deploy with Uvicorn
+      - name: Deploy
         run: |
           podman pull ${{ env.DOCKER_IMAGE }}:latest
           podman stop app || true
-          podman rm -f app || true
+          podman rm app || true
           podman run -d \
-            --replace \
             --name app \
             -p 60080:8000 \
-            -e BASE_PATH="/matsumoto" \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
-            ${{ env.DOCKER_IMAGE }}:latest \         
+            ${{ env.DOCKER_IMAGE }}:latest
