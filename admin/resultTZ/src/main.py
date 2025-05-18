@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # Добавил CORS
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from src import models, schemas
@@ -11,8 +12,19 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    root_path="/matsumoto",
+    title="Admin API",
+    version="1.0",
+)
 
+@app.get("/")
+async def health_check():
+    return {"status": "ok", "message": "API is running"}
+
+
+# Остальные эндпоинты (без изменений)
 @app.post("/users/", response_model=schemas.User)
 async def create_user(user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     user = models.User(name=user.name)
@@ -42,13 +54,13 @@ async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
 async def update_user(user_id: int, user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.User).where(models.User.id == user_id))
     db_user = result.scalar_one_or_none()
-    
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     db_user.name = user.name
     await db.commit()
-    
+
     return db_user
 
 
@@ -56,11 +68,11 @@ async def update_user(user_id: int, user: schemas.UserCreate, db: AsyncSession =
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.User).where(models.User.id == user_id))
     db_user = result.scalar_one_or_none()
-    
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     await db.delete(db_user)
     await db.commit()
-    
+
     return {"detail": "User deleted"}

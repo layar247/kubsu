@@ -12,7 +12,7 @@ env:
   DB_NAME: kubsu
   DB_USER: kubsu
   DB_PASSWORD: kubsu
-  APP_PORT: 60080 #r
+  APP_PORT: 60080 #rv
 
 jobs:
   build:
