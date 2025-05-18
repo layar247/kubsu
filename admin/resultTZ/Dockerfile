@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN apk add --no-cache make
 RUN pip install --upgrade pip
-RUN pip install uvicorn
+RUN pip install asyncpg sqlalchemy fastapi uvicorn
 RUN make install-dev
 
 FROM python:3.10-alpine AS runtime

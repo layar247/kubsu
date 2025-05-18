@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # Добавил CORS
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from src import models, schemas
