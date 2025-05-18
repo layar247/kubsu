@@ -85,10 +85,4 @@ jobs:
             -p 60080:8000 \
             -e BASE_PATH="/matsumoto" \
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
-            ${{ env.DOCKER_IMAGE }}:latest \
-      
-      - name: Verify deployment
-        run: |
-          sleep 10
-          curl -v http://212.168.134.135:60080/matsumoto/users/ || echo "Health check failed"
-          podman logs app
+            ${{ env.DOCKER_IMAGE }}:latest \         
