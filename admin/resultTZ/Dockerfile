@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN apk add --no-cache make
 RUN pip install --upgrade pip
-RUN pip install asyncpg sqlalchemy fastapi uvicorn
+RUN pip install asyncpg psycopg-binary sqlalchemy fastapi uvicorn
 RUN make install-dev
 
 FROM python:3.10-alpine AS runtime
@@ -14,4 +14,4 @@ COPY --from=builder /app /app
 RUN apk add --no-cache make
 ENV PATH="/usr/local/bin:${PATH}"
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--root-path", "/matsumoto"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--root-path", "/matsumoto"]
