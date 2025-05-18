@@ -1,7 +1,7 @@
 FROM python:3.10-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN apk add --no-cache make
+RUN apk add --no-cache make gcc musl-dev libffi-dev
 RUN pip install --upgrade pip
 RUN pip install uvicorn
 RUN make install-dev
