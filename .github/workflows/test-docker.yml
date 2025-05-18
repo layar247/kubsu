@@ -69,7 +69,6 @@ jobs:
             -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }} \
             ${{ env.DOCKER_IMAGE }}:latest \
             sh -c "pip install pytest && make test"
-
   deploy:
     runs-on: self-hosted
     needs: [test]
@@ -83,12 +82,13 @@ jobs:
           podman run -d \
             --replace \
             --name app \
-            -p ${{ env.APP_PORT }}:8000 \
+            -p 60080:8000 \
             -e BASE_PATH="/matsumoto" \
-            -e DATABASE_URL="postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }}" \
-            ${{ env.DOCKER_IMAGE }}:latest
-
+            -e DATABASE_URL=postgresql+asyncpg://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@db-host:5432/${{ env.DB_NAME }} \
+            ${{ env.DOCKER_IMAGE }}:latest \
+      
       - name: Verify deployment
         run: |
-          sleep 15
-          curl -v "http://212.192.134.135:${{ env.APP_PORT }}/matsumoto/users/" || (echo "Health check failed" && podman logs app && exit 1)  
+          sleep 10
+          curl -v http://212.168.134.135:60080/matsumoto/users/ || echo "Health check failed"
+          podman logs app
