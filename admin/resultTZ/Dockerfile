@@ -12,6 +12,5 @@ COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 RUN apk add --no-cache make libffi
 ENV PATH="/usr/local/bin:${PATH}"
-EXPOSE 8000  # Uvicorn по умолчанию использует порт 8000
-
+EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
