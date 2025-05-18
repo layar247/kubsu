@@ -91,11 +91,4 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 15
-          curl -v "localhost:${{ env.APP_PORT }}/matsumoto/users/" || (echo "Health check failed" && podman logs app && exit 1)
-
-      - name: Show container info
-        run: |
-          echo "Container status:"
-          podman ps -a
-          echo "Container logs:"
-          podman logs app
+          curl -v "http://212.192.134.135:${{ env.APP_PORT }}/matsumoto/users/" || (echo "Health check failed" && podman logs app && exit 1)  
