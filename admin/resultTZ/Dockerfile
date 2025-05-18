@@ -3,6 +3,7 @@ WORKDIR /app
 COPY . .
 RUN apk add --no-cache make
 RUN pip install --upgrade pip
+RUN pip install uvicorn
 RUN make install-dev
 
 FROM python:3.10-alpine AS runtime
@@ -11,5 +12,5 @@ COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/pytho
 COPY --from=builder /app /app
 RUN apk add --no-cache make
 ENV PATH="/usr/local/bin:${PATH}"
-EXPOSE 60080
-CMD ["make", "run"]
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
